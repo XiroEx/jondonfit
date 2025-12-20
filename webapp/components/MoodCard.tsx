@@ -225,17 +225,17 @@ export default function MoodCard({ currentMood, onMoodChange, isUpdating = false
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+            className="absolute -left-12 right-0 top-full z-20 mt-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <p className="mb-2 px-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <p className="mb-3 px-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               How are you feeling?
             </p>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-5 gap-3">
               {moodOptions.map((option) => (
                 <button
                   key={option.level}
                   onClick={() => handleMoodSelect(option.level)}
-                  className={`flex flex-col items-center gap-1 rounded-lg p-1.5 sm:p-2 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+                  className={`flex flex-col items-center gap-1.5 rounded-lg p-2 sm:p-3 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
                     currentMood === option.level 
                       ? 'bg-zinc-100 dark:bg-zinc-700 ring-2 ring-zinc-300 dark:ring-zinc-600' 
                       : ''

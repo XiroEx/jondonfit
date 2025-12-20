@@ -280,12 +280,12 @@ export default function MoodModal({ isOpen, onClose }: MoodModalProps) {
             </div>
 
             {/* Mood Options */}
-            <div className="grid grid-cols-5 gap-2 mb-6 sm:mb-8">
+            <div className="grid grid-cols-5 gap-3 mb-6 sm:mb-8">
               {moodOptions.map((option) => (
                 <button
                   key={option.level}
                   onClick={() => setSelectedMood(option.level)}
-                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:p-3 ${
+                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all duration-200 sm:p-4 ${
                     selectedMood === option.level
                       ? `${option.bgColor} ${option.borderColor} scale-105 shadow-lg`
                       : `border-zinc-200 dark:border-zinc-700 ${option.hoverColor}`
