@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface AuthGuardProps {
@@ -10,12 +10,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
+  const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('token')
-    if (!token) {
-      router.replace('/login')
-    } else {
-      // Optionally validate the token here
+    
+    if (token) {
+      // Validate the token locally first
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
         const exp = payload.exp * 1000 // Convert to milliseconds
@@ -23,16 +22,40 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           // Token expired
           localStorage.removeItem('token')
           router.replace('/login')
-        } else {
-          setIsAuthenticated(true)
+          return
         }
+        setIsAuthenticated(true)
+        return
       } catch {
-        // Invalid token
+        // Invalid token format, clear it
         localStorage.removeItem('token')
-        router.replace('/login')
       }
     }
+
+    // No valid localStorage token - check if we have a cookie-based session
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include' // Include cookies
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        // If server returned a token (from cookie), sync to localStorage
+        if (data.token) {
+          localStorage.setItem('token', data.token)
+        }
+        setIsAuthenticated(true)
+      } else {
+        router.replace('/login')
+      }
+    } catch {
+      router.replace('/login')
+    }
   }, [router])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   // Show loading state while checking auth
   if (isAuthenticated === null) {
