@@ -13,6 +13,15 @@ function VerifyContent() {
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(3)
+  const [isPWA, setIsPWA] = useState(false)
+
+  // Detect if running as installed PWA
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+      || document.referrer.includes('android-app://')
+    setIsPWA(isStandalone)
+  }, [])
 
   useEffect(() => {
     if (!token) {
@@ -50,7 +59,8 @@ function VerifyContent() {
     verify()
   }, [token])
 
-  // Auto-close countdown for success
+  // Auto-redirect to dashboard on success (only for PWA)
+  // For regular browsers, the original tab's polling will pick up the auth
   useEffect(() => {
     if (status !== 'success') return
 
@@ -58,13 +68,10 @@ function VerifyContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          // Try to close the window
-          window.close()
-          // If window.close() doesn't work (e.g., window wasn't opened by script),
-          // redirect to dashboard
-          setTimeout(() => {
+          if (isPWA) {
+            // In PWA, redirect since original instance is likely closed
             window.location.href = '/dashboard'
-          }, 100)
+          }
           return 0
         }
         return prev - 1
@@ -72,7 +79,7 @@ function VerifyContent() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [status])
+  }, [status, isPWA])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-6">
@@ -100,17 +107,30 @@ function VerifyContent() {
               <h1 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">
                 {mode === 'register' ? 'Account created!' : 'Signed in!'}
               </h1>
-              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                You're all set. This window will close automatically.
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                Closing in {countdown}...
-              </p>
+              {isPWA ? (
+                <>
+                  <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                    Redirecting to your dashboard...
+                  </p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                    Redirecting in {countdown}...
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                    You're all set! You can close this tab and return to your original window.
+                  </p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                    Or continue here:
+                  </p>
+                </>
+              )}
               <Link 
                 href="/dashboard" 
-                className="mt-4 inline-block text-sm text-zinc-900 dark:text-white underline"
+                className="mt-4 inline-block text-sm font-medium text-zinc-900 dark:text-white underline"
               >
-                Go to dashboard now
+                Go to dashboard
               </Link>
             </>
           )}
