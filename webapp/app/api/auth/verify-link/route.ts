@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/mongodb'
 import User from '@/models/User'
-import { verifyMagicLink } from '@/models/MagicLink'
+import { verifyMagicLink, storeAuthToken } from '@/models/MagicLink'
 import { signToken } from '@/lib/auth'
 
 export async function POST(req: Request) {
@@ -31,6 +31,8 @@ export async function POST(req: Request) {
       if (user) {
         // User already exists, just log them in
         const jwtToken = signToken({ userId: String(user._id), email: user.email })
+        // Store the JWT for the polling session
+        await storeAuthToken(token, jwtToken)
         return new Response(JSON.stringify({ 
           token: jwtToken, 
           user: { id: user._id, name: user.name, email: user.email } 
@@ -57,6 +59,9 @@ export async function POST(req: Request) {
     }
 
     const jwtToken = signToken({ userId: String(user._id), email: user.email })
+    
+    // Store the JWT for the polling session
+    await storeAuthToken(token, jwtToken)
 
     return new Response(JSON.stringify({ 
       token: jwtToken, 

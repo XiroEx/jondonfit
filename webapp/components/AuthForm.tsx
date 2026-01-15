@@ -1,16 +1,67 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   mode: 'login' | 'register'
 }
 
 export default function AuthForm({ mode }: Props) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [emailSent, setEmailSent] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Poll for verification status
+  useEffect(() => {
+    if (!sessionId || !emailSent) return
+
+    const pollSession = async () => {
+      try {
+        const res = await fetch('/api/auth/check-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        })
+
+        const data = await res.json()
+
+        if (data.status === 'verified' && data.authToken) {
+          // Success! Store token and redirect
+          localStorage.setItem('token', data.authToken)
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+          }
+          router.push('/dashboard')
+        } else if (data.status === 'expired') {
+          // Link expired, stop polling
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+          }
+          setError('Verification link expired. Please try again.')
+          setEmailSent(false)
+          setSessionId(null)
+        }
+        // If 'pending', keep polling
+      } catch (err) {
+        console.error('Polling error:', err)
+      }
+    }
+
+    // Start polling every 2 seconds
+    pollingRef.current = setInterval(pollSession, 2000)
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
+    }
+  }, [sessionId, emailSent, router])
 
   async function handleSendLink(e: React.FormEvent) {
     e.preventDefault()
@@ -30,12 +81,21 @@ export default function AuthForm({ mode }: Props) {
         throw new Error(data.message || 'Failed to send verification email')
       }
 
+      setSessionId(data.sessionId)
       setEmailSent(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to send email')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleChangeEmail() {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+    }
+    setEmailSent(false)
+    setSessionId(null)
   }
 
   if (emailSent) {
@@ -56,15 +116,19 @@ export default function AuthForm({ mode }: Props) {
           <p className="text-sm font-medium text-zinc-900 dark:text-white mb-4">
             {email}
           </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500">
+          <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-2">
             Click the link in the email to {mode === 'register' ? 'complete your registration' : 'sign in'}.
             The link expires in 15 minutes.
           </p>
+          <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+            Waiting for verification...
+          </div>
         </div>
 
         <button
           type="button"
-          onClick={() => setEmailSent(false)}
+          onClick={handleChangeEmail}
           className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white underline"
         >
           Use a different email
