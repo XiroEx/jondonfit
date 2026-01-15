@@ -4,10 +4,12 @@ import crypto from 'crypto'
 export interface IMagicLink extends Document {
   email: string
   token: string
+  sessionId: string
   mode: 'login' | 'register'
   name?: string
   expiresAt: Date
   used: boolean
+  authToken?: string  // JWT stored after verification
   createdAt: Date
 }
 
@@ -21,6 +23,12 @@ const MagicLinkSchema = new Schema<IMagicLink, MagicLinkModel>({
     trim: true,
   },
   token: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
+  sessionId: {
     type: String,
     required: true,
     unique: true,
@@ -44,6 +52,9 @@ const MagicLinkSchema = new Schema<IMagicLink, MagicLinkModel>({
     type: Boolean,
     default: false,
   },
+  authToken: {
+    type: String,
+  },
 }, {
   timestamps: true,
 })
@@ -54,6 +65,11 @@ MagicLinkSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 // Generate a secure token
 export function generateToken(): string {
   return crypto.randomBytes(32).toString('hex')
+}
+
+// Generate a shorter session ID for polling
+export function generateSessionId(): string {
+  return crypto.randomBytes(16).toString('hex')
 }
 
 // Create a magic link with 15 minute expiration
@@ -67,11 +83,13 @@ export async function createMagicLink(email: string, mode: 'login' | 'register',
   )
   
   const token = generateToken()
+  const sessionId = generateSessionId()
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
   
   const magicLink = new MagicLink({
     email,
     token,
+    sessionId,
     mode,
     name,
     expiresAt,
@@ -101,6 +119,34 @@ export async function verifyMagicLink(token: string): Promise<IMagicLink | null>
   await magicLink.save()
   
   return magicLink
+}
+
+// Check session status for polling
+export async function checkSession(sessionId: string): Promise<{ status: 'pending' | 'verified' | 'expired', authToken?: string }> {
+  const MagicLink = mongoose.models.MagicLink || mongoose.model<IMagicLink, MagicLinkModel>('MagicLink', MagicLinkSchema)
+  
+  const magicLink = await MagicLink.findOne({ sessionId })
+  
+  if (!magicLink) {
+    return { status: 'expired' }
+  }
+  
+  if (magicLink.expiresAt < new Date()) {
+    return { status: 'expired' }
+  }
+  
+  if (magicLink.used && magicLink.authToken) {
+    return { status: 'verified', authToken: magicLink.authToken }
+  }
+  
+  return { status: 'pending' }
+}
+
+// Store auth token after verification
+export async function storeAuthToken(token: string, authToken: string): Promise<void> {
+  const MagicLink = mongoose.models.MagicLink || mongoose.model<IMagicLink, MagicLinkModel>('MagicLink', MagicLinkSchema)
+  
+  await MagicLink.updateOne({ token }, { authToken })
 }
 
 const MagicLink = mongoose.models.MagicLink || mongoose.model<IMagicLink, MagicLinkModel>('MagicLink', MagicLinkSchema)
