@@ -59,8 +59,7 @@ function VerifyContent() {
     verify()
   }, [token])
 
-  // Auto-redirect to dashboard on success (only for PWA)
-  // For regular browsers, the original tab's polling will pick up the auth
+  // Auto-close tab or redirect after countdown
   useEffect(() => {
     if (status !== 'success') return
 
@@ -71,6 +70,10 @@ function VerifyContent() {
           if (isPWA) {
             // In PWA, redirect since original instance is likely closed
             window.location.href = '/dashboard'
+          } else {
+            // In browser, try to close this tab - polling in original tab handles auth
+            // window.close() only works for tabs opened by script, but we try anyway
+            window.close()
           }
           return 0
         }
@@ -119,10 +122,10 @@ function VerifyContent() {
               ) : (
                 <>
                   <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                    You're all set! You can close this tab and return to your original window.
+                    You're all set! This tab will close in {countdown}s...
                   </p>
                   <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                    Or continue here:
+                    Return to your original tab to continue.
                   </p>
                 </>
               )}

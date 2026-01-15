@@ -34,7 +34,10 @@ export default function TopNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Clear cookie via API
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    // Clear localStorage
     localStorage.removeItem('token')
     router.push('/login')
   }

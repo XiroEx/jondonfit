@@ -14,6 +14,17 @@ export async function POST(req: Request) {
 
     const result = await checkSession(sessionId)
 
+    // If verified, also set HTTP-only cookie for persistent auth
+    if (result.status === 'verified' && result.authToken) {
+      const cookieMaxAge = 7 * 24 * 60 * 60 // 7 days in seconds
+      return new Response(JSON.stringify(result), { 
+        status: 200,
+        headers: {
+          'Set-Cookie': `auth_token=${result.authToken}; HttpOnly; Path=/; Max-Age=${cookieMaxAge}; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`
+        }
+      })
+    }
+
     return new Response(JSON.stringify(result), { status: 200 })
 
   } catch (err: unknown) {

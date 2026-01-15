@@ -63,10 +63,18 @@ export async function POST(req: Request) {
     // Store the JWT for the polling session
     await storeAuthToken(token, jwtToken)
 
+    // Set HTTP-only cookie for persistent auth (7 days)
+    const cookieMaxAge = 7 * 24 * 60 * 60 // 7 days in seconds
+    
     return new Response(JSON.stringify({ 
       token: jwtToken, 
       user: { id: user._id, name: user.name, email: user.email } 
-    }), { status: 200 })
+    }), { 
+      status: 200,
+      headers: {
+        'Set-Cookie': `auth_token=${jwtToken}; HttpOnly; Path=/; Max-Age=${cookieMaxAge}; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`
+      }
+    })
 
   } catch (err: unknown) {
     console.error('verify-link error', err)
