@@ -85,14 +85,14 @@ export async function GET(request: NextRequest) {
     // Check if it's mandatory (14 days = 2 weeks)
     const isMandatory = consecutiveSkips >= 14
 
-    // Check if we should show reminder (days 3, 7, 12)
-    const shouldShowReminder = consecutiveSkips === 3 || consecutiveSkips === 7 || consecutiveSkips === 12
+    // Check if we should show reminder (days 3, 7, 12, or mandatory)
+    const shouldShowReminder = consecutiveSkips === 3 || consecutiveSkips === 7 || consecutiveSkips === 12 || isMandatory
 
     return NextResponse.json({
-      needsWeightCheck: true,
+      needsWeightCheck: true, // Always prompt daily, like mood
       consecutiveSkips,
       isMandatory,
-      showReminder: shouldShowReminder || isMandatory
+      showReminder: shouldShowReminder
     })
   } catch (error) {
     console.error('Error checking weight:', error)
