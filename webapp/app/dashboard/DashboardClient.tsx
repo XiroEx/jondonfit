@@ -80,11 +80,15 @@ export default function DashboardClient() {
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [todaysMood, setTodaysMood] = useState<MoodLevel | null>(null)
   const [isMoodUpdating, setIsMoodUpdating] = useState(false)
-  const [weightModalInfo, setWeightModalInfo] = useState({ isMandatory: false, consecutiveSkips: 0 })
+  const [weightModalInfo, setWeightModalInfo] = useState({ 
+    isMandatory: false, 
+    consecutiveSkips: 0,
+    needsWeightCheck: false 
+  })
 
   useEffect(() => {
     let shouldShowWeightModal = false
-    let weightInfo = { isMandatory: false, consecutiveSkips: 0 }
+    let weightInfo = { isMandatory: false, consecutiveSkips: 0, needsWeightCheck: false }
 
     // Check if we need to show mood modal and get today's mood from DB
     async function checkMoodStatus() {
@@ -133,11 +137,9 @@ export default function DashboardClient() {
         const res = await fetch('/api/weight', { headers })
         if (res.ok) {
           const { needsWeightCheck, consecutiveSkips, isMandatory } = await res.json()
-          if (needsWeightCheck) {
-            weightInfo = { isMandatory, consecutiveSkips }
-            setWeightModalInfo(weightInfo)
-            shouldShowWeightModal = true
-          }
+          weightInfo = { isMandatory, consecutiveSkips, needsWeightCheck }
+          setWeightModalInfo(weightInfo)
+          shouldShowWeightModal = needsWeightCheck
         }
       } catch (error) {
         console.error('Failed to check weight status:', error)
@@ -193,7 +195,7 @@ export default function DashboardClient() {
     }))
 
     // Check if we need to show weight modal after mood modal
-    if (weightModalInfo.consecutiveSkips > 0 || weightModalInfo.isMandatory) {
+    if (weightModalInfo.needsWeightCheck) {
       // Small delay to allow mood modal to close smoothly
       setTimeout(() => {
         setShowWeightModal(true)
