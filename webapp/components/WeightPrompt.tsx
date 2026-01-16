@@ -16,7 +16,7 @@ export default function WeightPrompt({ onSubmit, onSkip, isMandatory, reminderLe
 
   const getReminderMessage = () => {
     if (reminderLevel === 4 || isMandatory) {
-      return `⚠️ It's been ${REMINDER_THRESHOLDS.MANDATORY} days since your last weight entry. Please record your weight to continue.`
+      return `⚠️ It's been ${consecutiveSkips} days since your last weight entry. Please record your weight to continue.`
     } else if (reminderLevel === 3) {
       return `📊 You've skipped ${consecutiveSkips} days. Regular tracking helps you reach your goals!`
     } else if (reminderLevel === 2) {
