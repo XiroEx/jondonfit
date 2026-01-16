@@ -1,11 +1,20 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
 
+export interface IWeightEntry {
+  date: Date
+  weight: number
+  unit?: string
+}
+
 export interface IUser {
   _id?: string
   email: string
   password: string
   name: string
+  weightEntries?: IWeightEntry[]
+  lastWeightPrompt?: Date
+  consecutiveSkips?: number
   createdAt?: Date
   updatedAt?: Date
 }
@@ -27,6 +36,27 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: String,
     required: [true, 'Name is required'],
     trim: true,
+  },
+  weightEntries: [{
+    date: {
+      type: Date,
+      required: true,
+    },
+    weight: {
+      type: Number,
+      required: true,
+    },
+    unit: {
+      type: String,
+      default: 'lbs',
+    }
+  }],
+  lastWeightPrompt: {
+    type: Date,
+  },
+  consecutiveSkips: {
+    type: Number,
+    default: 0,
   },
 }, {
   timestamps: true,
