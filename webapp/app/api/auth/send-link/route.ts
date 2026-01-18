@@ -85,6 +85,12 @@ function getRequestOrigin(req: Request) {
   const host = req.headers.get('host')
   if (host) return `${forwardedProto}://${host}`
 
-  const url = new URL(req.url)
-  return `${url.protocol}//${url.host}`
+  try {
+    const url = new URL(req.url)
+    return `${url.protocol}//${url.host}`
+  } catch (err) {
+    console.error('Failed to parse request URL for origin detection', req.url, err)
+    // Fallback to environment variable only if URL parsing fails
+    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  }
 }
