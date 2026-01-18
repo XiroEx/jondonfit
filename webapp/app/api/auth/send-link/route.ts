@@ -25,8 +25,8 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ message: 'Invalid mode' }), { status: 400 })
     }
 
-    // Get the origin from request headers for callback URL
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Derive origin from request (prefers forwarded headers, falls back to host) so emails use the caller's domain
+    const origin = getRequestOrigin(req)
 
     await dbConnect()
 
@@ -62,4 +62,29 @@ export async function POST(req: Request) {
     const message = err instanceof Error ? err.message : 'Server error'
     return new Response(JSON.stringify({ message }), { status: 500 })
   }
+}
+
+function getRequestOrigin(req: Request) {
+  const originHeader = req.headers.get('origin')
+  if (originHeader) return originHeader
+
+  const forwardedProto = req.headers.get('x-forwarded-proto') || 'https'
+  const forwardedHost = req.headers.get('x-forwarded-host')
+  if (forwardedHost) return `${forwardedProto}://${forwardedHost}`
+
+  const referer = req.headers.get('referer')
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer)
+      return `${refererUrl.protocol}//${refererUrl.host}`
+    } catch (err) {
+      console.warn('Invalid referer header for origin detection', referer, err)
+    }
+  }
+
+  const host = req.headers.get('host')
+  if (host) return `${forwardedProto}://${host}`
+
+  const url = new URL(req.url)
+  return process.env.NEXT_PUBLIC_APP_URL || `${url.protocol}//${url.host}`
 }
