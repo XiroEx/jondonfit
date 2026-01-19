@@ -85,6 +85,12 @@ function getRequestOrigin(req: Request) {
   const host = req.headers.get('host')
   if (host) return `${forwardedProto}://${host}`
 
-  const url = new URL(req.url)
-  return process.env.NEXT_PUBLIC_APP_URL || `${url.protocol}//${url.host}`
+  try {
+    const url = new URL(req.url)
+    return `${url.protocol}//${url.host}`
+  } catch (err) {
+    // If we reach here, the request is malformed and cannot determine origin
+    console.error('Failed to parse request URL for origin detection')
+    throw new Error('Cannot determine request origin from headers or URL')
+  }
 }
