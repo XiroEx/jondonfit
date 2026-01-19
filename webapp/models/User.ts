@@ -1,11 +1,18 @@
-import mongoose, { Schema, Document, Model } from 'mongoose'
-import bcrypt from 'bcrypt'
+import mongoose, { Schema, Model } from 'mongoose';
+import bcrypt from 'bcrypt';
+
+export interface ISavedProgram {
+  programId: string;
+  savedAt: Date;
+  order: number;
+}
 
 export interface IUser {
   _id?: string
   email: string
   password: string
   name: string
+  savedPrograms?: ISavedProgram[];
   createdAt?: Date
   updatedAt?: Date
 }
@@ -15,6 +22,12 @@ interface IUserMethods {
 }
 
 type UserModel = Model<IUser, object, IUserMethods>
+
+const SavedProgramSchema = new Schema({
+  programId: { type: String, required: true },
+  savedAt: { type: Date, default: Date.now },
+  order: { type: Number, default: 0 },
+}, { _id: false });
 
 const UserSchema = new Schema<IUser, UserModel, IUserMethods>({
   email: {
@@ -34,6 +47,7 @@ const UserSchema = new Schema<IUser, UserModel, IUserMethods>({
     required: [true, 'Name is required'],
     trim: true,
   },
+  savedPrograms: [SavedProgramSchema],
 }, {
   timestamps: true,
 })

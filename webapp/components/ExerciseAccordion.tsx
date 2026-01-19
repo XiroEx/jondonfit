@@ -229,9 +229,17 @@ export default function ExerciseAccordion({ exercise, index }: ExerciseAccordion
       className="group relative overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 transition-all hover:shadow-md dark:bg-zinc-900 dark:ring-zinc-800"
     >
       {/* Main row - clickable header */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-4 text-left transition-colors sm:px-5 sm:py-5"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        className="w-full px-4 py-4 text-left transition-colors cursor-pointer sm:px-5 sm:py-5"
       >
         <div className="flex items-center gap-4">
           {/* Exercise number */}
@@ -287,7 +295,7 @@ export default function ExerciseAccordion({ exercise, index }: ExerciseAccordion
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </motion.svg>
         </div>
-      </button>
+      </div>
 
       {/* Expanded content */}
       <AnimatePresence>

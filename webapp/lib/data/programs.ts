@@ -36,6 +36,7 @@ export interface Program {
   goal: string;                  // Primary goal
   target_user: TargetUserLevel;  // Target audience
   equipment?: string[];          // Required equipment list
+  tags?: string[];               // Searchable tags for filtering
   phases: Phase[];
 }
 

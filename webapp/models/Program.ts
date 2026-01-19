@@ -37,6 +37,7 @@ export interface IProgram extends Document {
   goal: string;
   target_user: TargetUserLevel;
   equipment?: string[];
+  tags?: string[];
   phases: IPhase[];
 }
 
@@ -68,8 +69,8 @@ const PhaseSchema = new Schema<IPhase>({
 
 const ProgramSchema = new Schema<IProgram>({
   program_id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  description: { type: String },
+  name: { type: String, required: true, index: 'text' },
+  description: { type: String, index: 'text' },
   duration_weeks: { type: Number, required: true },
   training_days_per_week: { type: Number, required: true },
   goal: { type: String, required: true },
@@ -79,7 +80,13 @@ const ProgramSchema = new Schema<IProgram>({
     enum: ['Beginner', 'Intermediate', 'Advanced', 'Beginner to Intermediate', 'Intermediate to Advanced']
   },
   equipment: [{ type: String }],
+  tags: [{ type: String, index: true }],
   phases: [PhaseSchema],
+});
+
+// Create text index for search
+ProgramSchema.index({ name: 'text', description: 'text', tags: 'text' }, {
+  weights: { name: 10, tags: 5, description: 1 }
 });
 
 // Prevent recompilation of model
