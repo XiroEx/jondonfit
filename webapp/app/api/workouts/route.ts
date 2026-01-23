@@ -74,14 +74,24 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    if (!todayWorkout) {
+    if (todayWorkout) {
+      return NextResponse.json({ 
+        workout: todayWorkout,
+        isResume: !todayWorkout.completed // Resume if workout exists but not completed
+      })
+    }
+
+    // Fall back to the most recent log for this program/day to allow resuming past sessions
+    const lastLog = userProgress.workoutLogs
+      ?.filter((log: { programId: string; day: string }) => 
+        log.programId === programId && (!day || log.day === day))
+      .sort((a: { date: Date }, b: { date: Date }) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+
+    if (!lastLog) {
       return NextResponse.json({ workout: null, isResume: false })
     }
 
-    return NextResponse.json({ 
-      workout: todayWorkout,
-      isResume: !todayWorkout.completed // Resume if workout exists but not completed
-    })
+    return NextResponse.json({ workout: lastLog, isResume: !lastLog.completed })
 
   } catch (error) {
     console.error('Error fetching workout:', error)

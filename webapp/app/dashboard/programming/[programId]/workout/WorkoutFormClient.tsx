@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import { getExerciseVideoUrl, getExerciseThumbnail } from "@/lib/data/exerciseVideos";
@@ -142,7 +142,9 @@ const fallbackWorkout: WorkoutData = {
 export default function WorkoutFormPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const programId = params.programId as string;
+  const requestedDay = searchParams.get("day");
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
   const [currentPhase, setCurrentPhase] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,7 @@ export default function WorkoutFormPage() {
         }
 
         // Fetch the current workout for this program
-        const res = await fetch(`/api/programs/current-workout?programId=${programId}`, {
+        const res = await fetch(`/api/programs/current-workout?programId=${programId}${requestedDay ? `&day=${encodeURIComponent(requestedDay)}` : ""}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -200,7 +202,7 @@ export default function WorkoutFormPage() {
           setExerciseProgress(initialProgress);
 
           // Now check for in-progress workout for today
-          const progressRes = await fetch(`/api/workouts?programId=${programId}&day=${workoutData.day}`, {
+          const progressRes = await fetch(`/api/workouts?programId=${programId}&day=${encodeURIComponent(workoutData.day)}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
@@ -272,7 +274,7 @@ export default function WorkoutFormPage() {
     };
 
     loadWorkout();
-  }, [programId]);
+  }, [programId, requestedDay]);
 
   // Auto-save function
   const autoSave = useCallback(async (progress: ExerciseProgress[]) => {

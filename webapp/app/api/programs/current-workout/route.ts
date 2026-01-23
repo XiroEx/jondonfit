@@ -100,6 +100,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const programId = searchParams.get('programId')
+    const requestedDay = searchParams.get('day')
 
     if (!programId) {
       return NextResponse.json({ error: 'programId is required' }, { status: 400 })
@@ -133,9 +134,54 @@ export async function GET(request: NextRequest) {
     // Get the current day's workout
     const currentPhase = activeProgram.currentPhase || 1
     const currentDay = activeProgram.currentDay || 'Day 1'
-    
+    const phases = (program.phases || []) as Phase[]
+
+    // If a specific day was requested, try to serve that workout (search current phase first, then others)
+    if (requestedDay) {
+      const preferredPhaseIdx = Math.max(0, currentPhase - 1)
+      const preferredPhase = phases[preferredPhaseIdx]
+      const preferredWorkouts = normalizeWorkouts(preferredPhase?.workouts)
+      const preferredMatch = preferredWorkouts.find(w => w.day === requestedDay)
+
+      if (preferredMatch) {
+        return NextResponse.json({
+          workout: preferredMatch,
+          phase: preferredPhaseIdx + 1,
+          day: preferredMatch.day,
+          phaseInfo: {
+            name: preferredPhase?.phase,
+            focus: preferredPhase?.focus,
+            weeks: preferredPhase?.weeks
+          },
+          completedWorkouts: activeProgram.completedWorkouts || 0,
+          totalWorkouts: activeProgram.totalWorkouts || 0
+        })
+      }
+
+      const anyPhaseIdx = phases.findIndex(phase => normalizeWorkouts(phase.workouts).some(w => w.day === requestedDay))
+      if (anyPhaseIdx !== -1) {
+        const phase = phases[anyPhaseIdx]
+        const workouts = normalizeWorkouts(phase.workouts)
+        const requestedWorkout = workouts.find(w => w.day === requestedDay) || workouts[0]
+        if (requestedWorkout) {
+          return NextResponse.json({
+            workout: requestedWorkout,
+            phase: anyPhaseIdx + 1,
+            day: requestedWorkout.day,
+            phaseInfo: {
+              name: phase.phase,
+              focus: phase.focus,
+              weeks: phase.weeks
+            },
+            completedWorkouts: activeProgram.completedWorkouts || 0,
+            totalWorkouts: activeProgram.totalWorkouts || 0
+          })
+        }
+      }
+    }
+
     const phaseIdx = Math.max(0, currentPhase - 1)
-    const phase = program.phases?.[phaseIdx] as Phase | undefined
+    const phase = phases[phaseIdx] as Phase | undefined
 
     if (!phase) {
       return NextResponse.json({ error: 'Phase not found' }, { status: 404 })

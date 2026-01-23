@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getExerciseVideoUrlAsync } from "@/lib/data/exerciseVideos";
 
@@ -57,7 +57,9 @@ const fallbackExercises: Exercise[] = [
 export default function LiveWorkoutPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const programId = params.programId as string;
+  const requestedDay = searchParams.get("day");
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>(fallbackExercises);
   const [currentPhase, setCurrentPhase] = useState(1);
@@ -112,7 +114,7 @@ export default function LiveWorkoutPage() {
         }
 
         // Fetch the current workout for this program
-        const res = await fetch(`/api/programs/current-workout?programId=${programId}`, {
+        const res = await fetch(`/api/programs/current-workout?programId=${programId}${requestedDay ? `&day=${encodeURIComponent(requestedDay)}` : ""}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -138,7 +140,7 @@ export default function LiveWorkoutPage() {
           setExerciseData(initialData);
 
           // Now check for in-progress workout for today
-          const progressRes = await fetch(`/api/workouts?programId=${programId}&day=${workoutData.day}`, {
+          const progressRes = await fetch(`/api/workouts?programId=${programId}&day=${encodeURIComponent(workoutData.day)}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
@@ -215,7 +217,7 @@ export default function LiveWorkoutPage() {
     };
 
     loadWorkout();
-  }, [programId]);
+  }, [programId, requestedDay]);
 
   const parseRestTime = (rest: string): number => {
     const match = rest.match(/(\d+)/);

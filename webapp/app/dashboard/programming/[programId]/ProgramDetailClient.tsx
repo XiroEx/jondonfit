@@ -241,7 +241,7 @@ export default function ProgramDetailClient({ program }: Props) {
   const handleStartProgram = async () => {
     // If already enrolled, just navigate to workout
     if (activeProgram) {
-      router.push(`/dashboard/programming/${program.program_id}/workout`);
+      router.push(`/dashboard/programming/${program.program_id}/workout?day=${encodeURIComponent(selectedDayKey)}`);
       return;
     }
 
@@ -269,7 +269,7 @@ export default function ProgramDetailClient({ program }: Props) {
         if (data.activeProgram) {
           setActiveProgram(data.activeProgram);
         }
-        router.push(`/dashboard/programming/${program.program_id}/workout`);
+        router.push(`/dashboard/programming/${program.program_id}/workout?day=${encodeURIComponent(selectedDayKey)}`);
       } else {
         const error = await res.json();
         console.error("Enrollment failed:", error);
@@ -278,12 +278,12 @@ export default function ProgramDetailClient({ program }: Props) {
           setActiveProgram(error.activeProgram);
         }
         // Still navigate even if enrollment fails
-        router.push(`/dashboard/programming/${program.program_id}/workout`);
+        router.push(`/dashboard/programming/${program.program_id}/workout?day=${encodeURIComponent(selectedDayKey)}`);
       }
     } catch (error) {
       console.error("Error enrolling:", error);
       // Still navigate even if enrollment fails
-      router.push(`/dashboard/programming/${program.program_id}/workout`);
+      router.push(`/dashboard/programming/${program.program_id}/workout?day=${encodeURIComponent(selectedDayKey)}`);
     } finally {
       setEnrolling(false);
     }
@@ -352,7 +352,7 @@ export default function ProgramDetailClient({ program }: Props) {
               {enrolling ? "Starting..." : activeProgram ? "Continue Program" : "Start Program"}
             </button>
             <button 
-              onClick={() => router.push(`/dashboard/programming/${program.program_id}/workout/live`)}
+              onClick={() => router.push(`/dashboard/programming/${program.program_id}/workout/live?day=${encodeURIComponent(selectedDayKey)}`)}
               className={`flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold text-white backdrop-blur-sm transition-all sm:px-6 sm:py-3 ${
                 hasInProgressWorkout 
                   ? "bg-yellow-500/20 hover:bg-yellow-500/30 ring-1 ring-yellow-500/50" 
