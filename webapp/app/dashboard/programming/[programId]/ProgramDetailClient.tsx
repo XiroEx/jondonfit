@@ -155,6 +155,8 @@ export default function ProgramDetailClient({ program }: Props) {
   const [hasInProgressWorkout, setHasInProgressWorkout] = useState(false);
   const [showAbandonDialog, setShowAbandonDialog] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
+  const [completedDays, setCompletedDays] = useState<Set<string>>(new Set());
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const currentPhase = program.phases[selectedPhaseIndex];
   const normalizedWorkouts = currentPhase ? normalizeWorkouts(currentPhase.workouts) : [];
@@ -216,6 +218,38 @@ export default function ProgramDetailClient({ program }: Props) {
           if (found) {
             setActiveProgram(found);
             
+            // Fetch all completed workout logs for this program
+            const logsRes = await fetch(`/api/workouts/logs?programId=${program.program_id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (logsRes.ok) {
+              const logsData = await logsRes.json();
+              // Build a set of completed days
+              const completed = new Set<string>();
+              logsData.logs?.forEach((log: { day: string; completed: boolean }) => {
+                if (log.completed) {
+                  completed.add(log.day);
+                }
+              });
+              setCompletedDays(completed);
+
+              // Find the first incomplete day in the current phase and set as default
+              if (!hasInitialized) {
+                const currentPhaseWorkouts = normalizeWorkouts(program.phases[found.currentPhase - 1]?.workouts || program.phases[0]?.workouts);
+                const firstIncompleteDay = currentPhaseWorkouts.find(w => !completed.has(w.day));
+                if (firstIncompleteDay) {
+                  setSelectedDayKey(firstIncompleteDay.day);
+                  setSelectedPhaseIndex(found.currentPhase - 1 || 0);
+                } else {
+                  // All days in current phase complete, use the active program's current day
+                  setSelectedDayKey(found.currentDay || "Day 1");
+                  setSelectedPhaseIndex(found.currentPhase - 1 || 0);
+                }
+                setHasInitialized(true);
+              }
+            }
+            
             // Check for in-progress workout using the actual current day
             const currentDay = found.currentDay || 'Day 1';
             const progressRes = await fetch(`/api/workouts?programId=${program.program_id}&day=${currentDay}`, {
@@ -236,7 +270,7 @@ export default function ProgramDetailClient({ program }: Props) {
     };
 
     checkEnrollment();
-  }, [program.program_id]);
+  }, [program.program_id, program.phases, hasInitialized]);
 
   const handleStartProgram = async () => {
     // If already enrolled, just navigate to workout
@@ -462,17 +496,28 @@ export default function ProgramDetailClient({ program }: Props) {
             Training Days
           </div>
           <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-3">
-            {dayKeys.map((dayKey) => (
+            {dayKeys.map((dayKey) => {
+              const isCompleted = completedDays.has(dayKey);
+              return (
               <button
                 key={dayKey}
                 onClick={() => setSelectedDayKey(dayKey)}
                 className={`relative rounded-lg px-2 py-2.5 text-center text-sm font-semibold transition-all sm:rounded-xl sm:px-4 sm:py-3 ${
                   selectedDayKey === dayKey
                     ? "bg-zinc-900 text-white shadow-lg dark:bg-white dark:text-black"
+                    : isCompleted
+                    ? "border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
                     : "border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700"
                 }`}
               >
-                {dayKey}
+                <div className="flex items-center justify-center gap-1.5">
+                  {isCompleted && (
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  <span>{dayKey}</span>
+                </div>
                 {selectedDayKey === dayKey && (
                   <motion.div
                     layoutId="activeDay"
@@ -481,7 +526,8 @@ export default function ProgramDetailClient({ program }: Props) {
                   />
                 )}
               </button>
-            ))}
+            );
+            })}
           </div>
         </div>
 
