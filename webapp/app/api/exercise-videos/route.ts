@@ -31,7 +31,14 @@ export async function GET(request: NextRequest) {
 
     // Return all videos
     const videos = await ExerciseVideo.find({}).sort({ exerciseName: 1 });
-    return NextResponse.json({ videos });
+    return NextResponse.json({ 
+      videos: videos.map(v => ({
+        exerciseName: v.exerciseName,
+        videoUrl: v.videoUrl,
+        thumbnailUrl: v.thumbnailUrl || null,
+        isPlaceholder: v.isPlaceholder || false,
+      }))
+    });
   } catch (error) {
     console.error('Error fetching exercise videos:', error);
     return NextResponse.json(
