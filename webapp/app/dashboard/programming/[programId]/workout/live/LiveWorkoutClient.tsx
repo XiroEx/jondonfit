@@ -470,7 +470,8 @@ export default function LiveWorkoutPage() {
           playsInline
           className="h-full w-full object-cover"
         >
-          <source src={currentVideo} type={currentVideo.endsWith('.mov') ? 'video/quicktime' : 'video/mp4'} />
+          <source src={currentVideo} type="video/mp4" />
+          Your browser does not support the video tag.
         </video>
       </div>
 

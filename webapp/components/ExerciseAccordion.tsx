@@ -64,25 +64,19 @@ function VideoPlayer({ exerciseName }: { exerciseName: string }) {
 
   // For local videos, show inline video player
   if (isLocalVideo) {
-    // Determine MIME type based on file extension
-    const mimeType = videoUrl.endsWith('.mov') ? 'video/quicktime' : 'video/mp4';
-    
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-zinc-900">
         <video
           key={videoUrl}
           className="h-full w-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
           controls
+          crossOrigin="anonymous"
+          preload="auto"
         >
-          <source src={videoUrl} type={mimeType} />
           <source src={videoUrl} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 pointer-events-none">
           <span className="inline-block rounded bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
             Demo
           </span>

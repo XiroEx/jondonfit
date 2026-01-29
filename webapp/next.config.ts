@@ -24,11 +24,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Type',
-            value: 'video/quicktime',
+            value: 'video/mp4',
           },
           {
             key: 'Accept-Ranges',
             value: 'bytes',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
           {
             key: 'Cache-Control',
@@ -46,6 +50,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Accept-Ranges',
             value: 'bytes',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
           {
             key: 'Cache-Control',
